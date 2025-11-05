@@ -4,6 +4,5 @@ fn main() {
     println!("cargo::rerun-if-changed=fonts/icons.toml");
     Icon::builder("fonts/icons.toml")
         .set_gen_type(icon::GenType::Iced)
-        .build()
-        .expect("Generate icons font");
+        .build();
 }

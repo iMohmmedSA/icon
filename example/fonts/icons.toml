@@ -1,0 +1,6 @@
+module = "icons"
+
+[glyphs]
+rust = "devicon-plain::rust"
+abc = "ic::baseline-abc"
+crab = "fluent-emoji-flat::crab"

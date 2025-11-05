@@ -1,0 +1,28 @@
+/// Generated automatically by build.rs
+/// Do not edit manually.
+/// Icon hash (SHA-256): {{icon_hash}}
+use iced::{widget::Text, Font};
+
+pub const FONT: &[u8] = include_bytes!("{{font_include}}");
+
+#[derive(Copy, Clone, Debug)]
+pub enum {{module}} {
+{{#each icons}}
+    {{variant}},
+{{/each}}
+}
+
+impl {{module}} {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+        {{#each icons}}
+            Self::{{variant}} => "{{codepoint}}",
+        {{/each}}
+        }
+    }
+
+    #[inline]
+    pub fn symbol(self) -> Text<'static> {
+        Text::new(self.as_str()).font(Font::with_name("{{font_name}}"))
+    }
+}

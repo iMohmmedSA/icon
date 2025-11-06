@@ -1,7 +1,7 @@
 /// Generated automatically by build.rs
 /// Do not edit manually.
 /// Icon hash (SHA-256): 9D872D1F827CF22B61851736032640E868A3074C7A049EC110B12344FD13DE6E
-use iced::{widget::Text, Font};
+use iced::{Font, widget::Text};
 
 pub const FONT: &[u8] = include_bytes!("../fonts/icons.ttf");
 

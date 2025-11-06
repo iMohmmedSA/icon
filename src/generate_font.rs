@@ -269,7 +269,7 @@ fn generate_font_bytes(
     let mut next_gid: u16 = 1;
     let mut codepoints: Vec<(char, GlyphId)> = Vec::new();
 
-    for (_, packs) in glyphs {
+    for packs in glyphs.values_mut() {
         for pack in packs {
             if pack.icon.trim().is_empty() {
                 panic!("{} svg should not be empty", pack.enum_variant)
@@ -438,26 +438,29 @@ fn generate_font_bytes(
     } else {
         0xE000
     };
-    let mut os2 = Os2::default();
-    os2.x_avg_char_width = advance_width as i16;
-    os2.us_weight_class = 400;
-    os2.us_width_class = 5;
-    os2.panose_10 = [0; 10];
-    os2.fs_selection = SelectionFlags::REGULAR;
-    os2.us_first_char_index = 0xE000;
-    os2.us_last_char_index = last_char_index;
-    os2.s_typo_ascender = ascent;
-    os2.s_typo_descender = descent;
-    os2.s_typo_line_gap = 0;
-    os2.us_win_ascent = ascent as u16;
-    os2.us_win_descent = (-descent) as u16;
-    os2.ul_code_page_range_1 = Some(0);
-    os2.ul_code_page_range_2 = Some(0);
-    os2.sx_height = Some(0);
-    os2.s_cap_height = Some(0);
-    os2.us_default_char = Some(0);
-    os2.us_break_char = Some(0);
-    os2.us_max_context = Some(0);
+
+    let os2 = Os2 {
+        x_avg_char_width: advance_width as i16,
+        us_weight_class: 400,
+        us_width_class: 5,
+        panose_10: [0; 10],
+        fs_selection: SelectionFlags::REGULAR,
+        us_first_char_index: 0xE000,
+        us_last_char_index: last_char_index,
+        s_typo_ascender: ascent,
+        s_typo_descender: descent,
+        s_typo_line_gap: 0,
+        us_win_ascent: ascent as u16,
+        us_win_descent: (-descent) as u16,
+        ul_code_page_range_1: Some(0),
+        ul_code_page_range_2: Some(0),
+        sx_height: Some(0),
+        s_cap_height: Some(0),
+        us_default_char: Some(0),
+        us_break_char: Some(0),
+        us_max_context: Some(0),
+        ..Default::default()
+    };
 
     let cmap = Cmap::from_mappings(codepoints).expect("failed to build cmap from glyph mappings");
 

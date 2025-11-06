@@ -71,7 +71,7 @@ impl Icon {
         };
 
         let serialized = serde_json::to_vec(&definition).expect("Failed to serialize definition");
-        let hash = hex_upper(&Sha256::digest(&serialized));
+        let hash = hex_upper(Sha256::digest(&serialized));
 
         let glyphs = definition
             .glyphs
@@ -101,7 +101,7 @@ impl Icon {
 
         let definition = Definition {
             module: definition.module,
-            glyphs: glyphs,
+            glyphs,
         };
 
         Icon {
@@ -130,7 +130,7 @@ impl Icon {
         );
 
         match self.gen_type {
-            GenType::Font => return,
+            GenType::Font => (),
             GenType::Iced => self.generate_iced(),
         }
     }
@@ -146,10 +146,7 @@ impl Icon {
         }
 
         let module_path = module_file_path("src", &self.definition.module);
-        match extract_hash(&module_path) {
-            Some(existing) if existing == self.hash => true,
-            _ => false,
-        }
+        matches!(extract_hash(&module_path), Some(existing) if existing == self.hash)
     }
 
     fn generate_iced(&mut self) {
@@ -206,10 +203,10 @@ impl Icon {
             .render_template(ICED_TEMPLATE, &data)
             .expect("failed to render Iced template");
 
-        if let Some(parent) = module_path.parent() {
-            if !parent.as_os_str().is_empty() {
-                fs::create_dir_all(parent).expect("failed to create module directories");
-            }
+        if let Some(parent) = module_path.parent()
+            && !parent.as_os_str().is_empty()
+        {
+            fs::create_dir_all(parent).expect("failed to create module directories");
         }
 
         fs::write(&module_path, rendered).expect("failed to write generated Iced module");
@@ -295,10 +292,12 @@ fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
 
         for (pack, clean_name) in entries.iter_mut().zip(cleaned.into_iter()) {
             let (icons, width, height) = &fetched;
-            let icon = icons.get(&clean_name).expect(&format!(
-                "Iconify missing icon '{}' for collection '{}'",
-                clean_name, collection.0,
-            ));
+            let icon = icons.get(&clean_name).unwrap_or_else(|| {
+                panic!(
+                    "Iconify missing icon '{}' for collection '{}'",
+                    clean_name, collection.0
+                )
+            });
 
             pack.icon = wrap_iconify_svg(&icon.body, *width, *height);
         }

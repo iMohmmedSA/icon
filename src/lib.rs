@@ -225,6 +225,8 @@ fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
     #[derive(Deserialize)]
     struct IconifyIcon {
         body: String,
+        width: Option<f64>,
+        height: Option<f64>,
     }
 
     for (collection, entries) in glyphs.iter_mut() {
@@ -291,7 +293,7 @@ fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
         let fetched = (parsed.icons, parsed.width, parsed.height);
 
         for (pack, clean_name) in entries.iter_mut().zip(cleaned.into_iter()) {
-            let (icons, width, height) = &fetched;
+            let (ref icons, width, height) = fetched;
             let icon = icons.get(&clean_name).unwrap_or_else(|| {
                 panic!(
                     "Iconify missing icon '{}' for collection '{}'",
@@ -299,7 +301,11 @@ fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
                 )
             });
 
-            pack.icon = wrap_iconify_svg(&icon.body, *width, *height);
+            pack.icon = wrap_iconify_svg(
+                &icon.body,
+                icon.width.unwrap_or(width),
+                icon.height.unwrap_or(height),
+            );
         }
     }
 }

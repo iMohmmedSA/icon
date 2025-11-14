@@ -1,4 +1,4 @@
-use crate::{Collection, PackIcon, module_leaf};
+use crate::{Collection, PackIcon, glyphs_in_order, module_leaf};
 use kurbo::{Affine, BezPath, CubicBez, PathEl, Point, Rect, Shape, Vec2};
 use std::{collections::BTreeMap, fs::File, io::Write, path};
 use usvg::{Group, Node, Options, Transform, Tree, tiny_skia_path};
@@ -269,39 +269,43 @@ fn generate_font_bytes(
     let mut next_gid: u16 = 1;
     let mut codepoints: Vec<(char, GlyphId)> = Vec::new();
 
-    for packs in glyphs.values_mut() {
-        for pack in packs {
-            if pack.icon.trim().is_empty() {
-                panic!("{} svg should not be empty", pack.enum_variant)
-            }
+    let ordered_entries = glyphs_in_order(glyphs);
+    for (collection, index) in ordered_entries {
+        let pack = glyphs
+            .get_mut(&collection)
+            .and_then(|packs| packs.get_mut(index))
+            .unwrap_or_else(|| panic!("glyph order mismatch for collection '{}'", collection.0));
 
-            let mut parsed_svg = svg_to_bez(&pack.icon);
-            // TTF only supports quadratic curves
-            parsed_svg.outline = bezpath_with_quadratics(&parsed_svg.outline);
-            debug_assert!(
-                !parsed_svg.outline.is_empty(),
-                "Unexpected empty outline after conversion"
-            );
-
-            map_svg_to_em_space(&mut parsed_svg, units_per_em, max_width, max_height);
-
-            let mut sg = SimpleGlyph::from_bezpath(&parsed_svg.outline).expect("malformed outline");
-
-            // Without the two lines below the glyph would be centered at the left middle
-            sg.bbox.x_min = 0;
-            sg.bbox.y_min = 0;
-
-            gl.add_glyph(&sg).expect("add glyph");
-
-            let ch = char::from_u32(next_codepoint as u32).expect("valid PUA codepoint");
-            let gid = GlyphId::from(next_gid);
-            codepoints.push((ch, gid));
-
-            pack.icon = ch.to_string();
-
-            next_codepoint = next_codepoint.wrapping_add(1);
-            next_gid = next_gid.wrapping_add(1);
+        if pack.icon.trim().is_empty() {
+            panic!("{} svg should not be empty", pack.enum_variant)
         }
+
+        let mut parsed_svg = svg_to_bez(&pack.icon);
+        // TTF only supports quadratic curves
+        parsed_svg.outline = bezpath_with_quadratics(&parsed_svg.outline);
+        debug_assert!(
+            !parsed_svg.outline.is_empty(),
+            "Unexpected empty outline after conversion"
+        );
+
+        map_svg_to_em_space(&mut parsed_svg, units_per_em, max_width, max_height);
+
+        let mut sg = SimpleGlyph::from_bezpath(&parsed_svg.outline).expect("malformed outline");
+
+        // Without the two lines below the glyph would be centered at the left middle
+        sg.bbox.x_min = 0;
+        sg.bbox.y_min = 0;
+
+        gl.add_glyph(&sg).expect("add glyph");
+
+        let ch = char::from_u32(next_codepoint as u32).expect("valid PUA codepoint");
+        let gid = GlyphId::from(next_gid);
+        codepoints.push((ch, gid));
+
+        pack.icon = ch.to_string();
+
+        next_codepoint = next_codepoint.wrapping_add(1);
+        next_gid = next_gid.wrapping_add(1);
     }
 
     let total_glyphs = next_gid;

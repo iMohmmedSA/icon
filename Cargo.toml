@@ -6,10 +6,11 @@ license = "MIT"
 keywords = ["fonts"]
 
 [dependencies]
-toml = "0.9"
+toml = { version = "0.9", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde_json = "1"
+indexmap = { version = "2", features = ["serde"] }
 write-fonts = "0.43"
 kurbo = "0.12"
 usvg = "0.45"

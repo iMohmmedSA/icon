@@ -3,6 +3,7 @@ mod generate_font;
 use crate::generate_font::{font_path, wrap_iconify_svg};
 use ::reqwest::Url;
 use handlebars::Handlebars;
+use indexmap::IndexMap;
 use reqwest::blocking as reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -26,13 +27,14 @@ const RESERVED_WORDS: [&str; 52] = [
 #[derive(Debug, Clone, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
 pub(crate) struct Collection(String);
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub(crate) struct PackIcon {
     enum_variant: String,
     icon: String,
+    order: usize,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 struct Definition {
     module: String,
     glyphs: BTreeMap<Collection, Vec<PackIcon>>,
@@ -60,7 +62,7 @@ impl Icon {
         #[derive(Debug, Clone, Serialize, Deserialize)]
         struct DefinitionTemp {
             module: String,
-            glyphs: BTreeMap<String, String>,
+            glyphs: IndexMap<String, String>,
         }
 
         let definition: DefinitionTemp = match toml::from_str(&content) {
@@ -76,7 +78,8 @@ impl Icon {
         let glyphs = definition
             .glyphs
             .into_iter()
-            .map(|(enum_var, text)| {
+            .enumerate()
+            .map(|(order, (enum_var, text))| {
                 let (collection, icon) = text.split_once("::").unwrap_or_else(|| {
                     panic!(
                         "glyph '{}' must use 'collection::icon' syntax (got '{}')",
@@ -84,16 +87,19 @@ impl Icon {
                     )
                 });
                 (
-                    collection.to_string(),
-                    (reserved_name(enum_var), icon.to_string()),
+                    order,
+                    Collection(collection.to_string()),
+                    reserved_name(enum_var),
+                    icon.to_string(),
                 )
             })
             .fold(
                 BTreeMap::<Collection, Vec<PackIcon>>::new(),
-                |mut t, (lib, (enum_var, icon))| {
-                    t.entry(Collection(lib)).or_default().push(PackIcon {
+                |mut t, (order, collection, enum_var, icon)| {
+                    t.entry(collection).or_default().push(PackIcon {
                         enum_variant: upper_first_char(&enum_var),
                         icon,
+                        order,
                     });
                     t
                 },
@@ -172,12 +178,17 @@ impl Icon {
             .to_string_lossy()
             .to_string();
 
-        let icons = self
-            .definition
-            .glyphs
-            .values()
-            .flat_map(|packs| packs.iter())
-            .map(|pack| {
+        let glyphs = &self.definition.glyphs;
+        let icons = glyphs_in_order(glyphs)
+            .into_iter()
+            .map(|(collection, index)| {
+                let pack = glyphs
+                    .get(&collection)
+                    .and_then(|packs| packs.get(index))
+                    .unwrap_or_else(|| {
+                        panic!("glyph order mismatch for collection '{}'", collection.0)
+                    });
+
                 let ch = pack
                     .icon
                     .chars()
@@ -396,6 +407,24 @@ fn relative_path(from: &Path, to: &Path) -> PathBuf {
     }
 
     relative
+}
+
+pub(crate) fn glyphs_in_order(
+    glyphs: &BTreeMap<Collection, Vec<PackIcon>>,
+) -> Vec<(Collection, usize)> {
+    let mut ordered = Vec::new();
+
+    for (collection, packs) in glyphs {
+        for (index, pack) in packs.iter().enumerate() {
+            ordered.push((pack.order, collection.clone(), index));
+        }
+    }
+
+    ordered.sort_by_key(|(order, _, _)| *order);
+    ordered
+        .into_iter()
+        .map(|(_, collection, index)| (collection, index))
+        .collect()
 }
 
 fn extract_hash(path: &Path) -> Option<String> {

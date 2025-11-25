@@ -5,3 +5,6 @@ rust = "devicon-plain::rust"
 abc = "ic::baseline-abc"
 crab = "fluent-emoji-flat::crab"
 git = "devicon-plain::git"
+
+[local_assets]
+strokeTest = "test1"

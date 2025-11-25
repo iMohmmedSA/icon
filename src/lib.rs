@@ -24,6 +24,8 @@ const ICED_TEMPLATE: &str = include_str!("../templates/iced.rs.hbs");
 
 pub struct Icon {
     path: PathBuf,
+    assets_path: Option<PathBuf>,
+
     gen_type: GenType,
     definition: Definition,
     hash: String,
@@ -32,14 +34,18 @@ pub struct Icon {
 impl Icon {
     pub fn builder(path: impl AsRef<Path>) -> Icon {
         let path = path.as_ref().to_path_buf();
-        let (definition, hash) = parse_definition(&path);
-
         Icon {
             path,
+            assets_path: None,
             gen_type: GenType::Font,
-            definition,
-            hash,
+            definition: Default::default(),
+            hash: Default::default(),
         }
+    }
+
+    pub fn set_assets_path(&mut self, assets_path: impl AsRef<Path>) -> &mut Self {
+        self.assets_path = Some(assets_path.as_ref().to_path_buf());
+        self
     }
 
     pub fn set_gen_type(&mut self, gen_type: GenType) -> &mut Self {
@@ -48,6 +54,10 @@ impl Icon {
     }
 
     pub fn build(&mut self) {
+        let (definition, hash) = parse_definition(&self.path, self.assets_path.as_deref());
+        self.definition = definition;
+        self.hash = hash;
+
         if self.up_to_date() {
             return;
         }
@@ -110,7 +120,7 @@ impl Icon {
                     .get(&collection)
                     .and_then(|packs| packs.get(index))
                     .unwrap_or_else(|| {
-                        panic!("glyph order mismatch for collection '{}'", collection.0)
+                        panic!("glyph order mismatch for collection '{}'", collection.name)
                     });
 
                 let ch = pack

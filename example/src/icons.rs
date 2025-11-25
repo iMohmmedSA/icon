@@ -1,6 +1,6 @@
 /// Generated automatically by build.rs
 /// Do not edit manually.
-/// Icon hash (SHA-256): 64DA0B71A709EB1D1F216723138E7110F888377EA8F1D0689E9BE2341552FB62
+/// Icon hash (SHA-256): 15C30E8ABA11F0CC54A2E34DC2AE52B80E2BF84798178996F4E89A6BEB783384
 use iced::{Font, widget::Text};
 
 pub const FONT: &[u8] = include_bytes!("../fonts/icons.ttf");
@@ -11,6 +11,7 @@ pub enum Icons {
     Abc,
     Crab,
     Git,
+    StrokeTest,
 }
 
 impl Icons {
@@ -20,6 +21,7 @@ impl Icons {
             Self::Abc => "\u{E001}",
             Self::Crab => "\u{E002}",
             Self::Git => "\u{E003}",
+            Self::StrokeTest => "\u{E004}",
         }
     }
 

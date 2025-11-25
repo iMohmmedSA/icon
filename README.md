@@ -5,10 +5,12 @@
 
 ## Supported
 - Lines
+- Local Svg
 
 ## Not yet
-- Local Svg
 - Svg Strokes
+- Layers
+- Colors
 
 ## Credits
 Portions of this project are adapted from:

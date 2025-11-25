@@ -71,7 +71,7 @@ pub(crate) fn generate_font_bytes(
         let pack = glyphs
             .get_mut(&collection)
             .and_then(|packs| packs.get_mut(index))
-            .unwrap_or_else(|| panic!("glyph order mismatch for collection '{}'", collection.0));
+            .unwrap_or_else(|| panic!("glyph order mismatch for collection '{}'", collection.name));
 
         if pack.icon.trim().is_empty() {
             panic!("{} svg should not be empty", pack.enum_variant)

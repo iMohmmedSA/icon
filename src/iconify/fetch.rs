@@ -9,6 +9,10 @@ use super::client::fetch_collection;
 
 pub(crate) fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
     for (collection, entries) in glyphs.iter_mut() {
+        if collection.local {
+            continue;
+        }
+
         let cleaned: Vec<String> = entries
             .iter()
             .map(|pack| {
@@ -32,10 +36,10 @@ pub(crate) fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
 
         let parsed = fetch_collection(collection, &wanted);
 
-        if parsed.prefix != *collection.0 {
+        if parsed.prefix != *collection.name {
             panic!(
                 "Iconify prefix mismatch: requested collection '{}', got '{}'",
-                collection.0, parsed.prefix
+                collection.name, parsed.prefix
             );
         }
 
@@ -46,7 +50,7 @@ pub(crate) fn fetch_icons(glyphs: &mut BTreeMap<Collection, Vec<PackIcon>>) {
             let icon = icons.get(&clean_name).unwrap_or_else(|| {
                 panic!(
                     "Iconify missing icon '{}' for collection '{}'",
-                    clean_name, collection.0
+                    clean_name, collection.name
                 )
             });
 

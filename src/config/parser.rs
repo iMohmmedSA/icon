@@ -78,7 +78,7 @@ pub(crate) fn parse_definition(path: &Path, assets_path: Option<&Path>) -> (Defi
             glyphs
                 .entry(Collection {
                     name: "local".to_string(),
-                    local: false,
+                    local: true,
                 })
                 .or_default()
                 .push(PackIcon {

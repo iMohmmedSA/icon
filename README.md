@@ -6,9 +6,9 @@
 ## Supported
 - Lines
 - Local Svg
+- Strokes (outlined)
 
 ## Not yet
-- Svg Strokes
 - Layers
 - Colors
 

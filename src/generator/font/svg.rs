@@ -1,5 +1,8 @@
 use kurbo::{Affine, BezPath, CubicBez, PathEl, Point, Rect, Shape, Vec2};
-use usvg::{Group, Node, Options, Transform, Tree, tiny_skia_path};
+use usvg::{
+    Group, Node, Options, PaintOrder, Transform, Tree,
+    tiny_skia_path::{self, PathStroker},
+};
 
 pub(crate) fn wrap_iconify_svg(body: &str, width: f64, height: f64) -> String {
     fn fmt(value: f64) -> String {
@@ -95,14 +98,44 @@ fn append_path_node(path: &usvg::Path, out: &mut BezPath) {
         return;
     }
 
-    let mut local = tiny_path_to_bez(path.data());
     let ts = path.abs_transform();
-    if !ts.is_identity() {
-        let aff = transform_to_affine(ts);
-        local.apply_affine(aff);
-    }
+    let aff = (!ts.is_identity()).then(|| transform_to_affine(ts));
 
-    out.extend(local);
+    let fill_path = path.fill().map(|_| {
+        let mut local = tiny_path_to_bez(path.data());
+        if let Some(aff) = aff {
+            local.apply_affine(aff);
+        }
+        local
+    });
+
+    let stroke_path = path.stroke().and_then(|stroke| {
+        let res_scale = PathStroker::compute_resolution_scale(&ts);
+        let stroke = stroke.to_tiny_skia();
+
+        let stroked = path.data().stroke(&stroke, res_scale)?;
+        let mut local = tiny_path_to_bez(&stroked);
+        if let Some(aff) = aff {
+            local.apply_affine(aff);
+        }
+        Some(local)
+    });
+
+    match (fill_path, stroke_path) {
+        (Some(fill), Some(stroke)) => match path.paint_order() {
+            PaintOrder::FillAndStroke => {
+                out.extend(fill);
+                out.extend(stroke);
+            }
+            PaintOrder::StrokeAndFill => {
+                out.extend(stroke);
+                out.extend(fill);
+            }
+        },
+        (Some(fill), None) => out.extend(fill),
+        (None, Some(stroke)) => out.extend(stroke),
+        (None, None) => {}
+    }
 }
 
 fn collect_group_paths(group: &Group, out: &mut BezPath) {
